@@ -344,6 +344,13 @@ detectNet* detectNet::Create( int argc, char** argv )
 	// parse the model type
 	const detectNet::NetworkType type = NetworkTypeFromStr(modelName);
 
+	// EDITED THIS BIT
+	const char* precName = cmdLine.GetString("precision");
+	const precisionType precision = precisionTypeFromStr(precName);
+	const char* devName = cmdLine.GetString("device");
+	const deviceType device = deviceTypeFromStr(devName);
+	const bool allowGPUFallback = cmdLine.GetFlag("allowGPUFallback");
+
 	if( type == detectNet::CUSTOM )
 	{
 		const char* prototxt     = cmdLine.GetString("prototxt");
@@ -370,7 +377,8 @@ detectNet* detectNet::Create( int argc, char** argv )
 	else
 	{
 		// create detectNet from pretrained model
-		net = detectNet::Create(type, threshold, maxBatchSize);
+		// EDITED THIS BIT
+		net = detectNet::Create(type, threshold, maxBatchSize, precision, device, allowGPUFallback);
 	}
 
 	if( !net )

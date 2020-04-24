@@ -371,6 +371,7 @@ detectNet* detectNet::Create( int argc, char** argv )
 
 		float meanPixel = cmdLine.GetFloat("mean_pixel");
 
+		//EDITED THIS BIT
 		net = detectNet::Create(prototxt, modelName, meanPixel, class_labels, threshold, input, 
 							out_blob ? NULL : out_cvg, out_blob ? out_blob : out_bbox, maxBatchSize, precision, device, allowGPUFallback);
 	}

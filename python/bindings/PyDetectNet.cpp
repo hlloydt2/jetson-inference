@@ -119,7 +119,7 @@ static int PyDetection_Init( PyDetection_Object* self, PyObject* args, PyObject*
 // Deallocate
 static void PyDetection_Dealloc( PyDetection_Object* self )
 {
-	printf(LOG_PY_INFERENCE "PyDetection_Dealloc()\n");
+	//printf(LOG_PY_INFERENCE "PyDetection_Dealloc()\n");
 
 	// free the container
 	Py_TYPE(self)->tp_free((PyObject*)self);

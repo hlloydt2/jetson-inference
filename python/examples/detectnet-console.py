@@ -46,6 +46,7 @@ except:
 
 # load an image (into shared CPU/GPU memory)
 img, width, height = jetson.utils.loadImageRGBA(opt.file_in)
+print img, width, height
 
 # load the object detection network
 net = jetson.inference.detectNet(opt.network, sys.argv, opt.threshold)

@@ -23,9 +23,11 @@
 
 import jetson.inference
 import jetson.utils
+import numpy as np
 
 import argparse
 import sys
+import cv2
 
 # parse the command line
 parser = argparse.ArgumentParser(description="Locate objects in an image using an object detection DNN.", 
@@ -34,10 +36,17 @@ parser = argparse.ArgumentParser(description="Locate objects in an image using a
 parser.add_argument("file_in", type=str, help="filename of the input image to process")
 parser.add_argument("file_out", type=str, default=None, nargs='?', help="filename of the output image to save")
 parser.add_argument("--network", type=str, default="pednet", help="pre-trained model to load (see below for options)")
-parser.add_argument("--overlay", type=str, default="box,labels,conf", help="detection overlay flags (e.g. --overlay=box,labels,conf)\nvalid combinations are:  'box', 'labels', 'conf', 'none'")
+parser.add_argument("--overlay", type=str, default="none", help="detection overlay flags (e.g. --overlay=box,labels,conf)\nvalid combinations are:  'box', 'labels', 'conf', 'none'")
 parser.add_argument("--threshold", type=float, default=0.5, help="minimum detection threshold to use")
 parser.add_argument("--device", type=str, default="DLA", help="Device to use. Either GPU or DLA")
 parser.add_argument("--precision", type=str, default="FP16", help="Either INT8, FP16, FP32")
+
+video_path = "/opt/nvidia/deepstream/deepstream-4.0/samples/streams/sample_720p.mp4"
+video = cv2.VideoCapture(video_path)
+
+if not video.isOpened():
+	print("Could not open video")
+	sys.exit()
 
 try:
 	opt = parser.parse_known_args()[0]
@@ -47,26 +56,19 @@ except:
 	parser.print_help()
 	sys.exit(0)
 
-# load an image (into shared CPU/GPU memory)
-img, width, height = jetson.utils.loadImageRGBA(opt.file_in)
-
-# load the object detection network
 net = jetson.inference.detectNet(opt.network, sys.argv, opt.threshold)
+width = 720
+height = 1280
 
-# detect objects in the image (with overlay)
-detections = net.Detect(img, width, height, opt.overlay)
+while True:
+	ok, frame = video.read()
+	if not ok: break
+	frame = cv2.cvtColor(frame, cv2.COLOR_RGB2RGBA)
+	cuda_mem = jetson.utils.cudaFromNumpy(frame)
+	detections = net.Detect(cuda_mem, width, height, opt.overlay)
+	print("detected {:d} objects in image".format(len(detections)))
+	#cv2.imshow("frame", frame)
+	if cv2.waitKey(1) & 0xFF == ord('q'): break
 
-# print the detections
-print("detected {:d} objects in image".format(len(detections)))
-
-for detection in detections:
-	print(detection)
-
-# print out timing info
 net.PrintProfilerTimes()
-
-# save the output image with the bounding box overlays
-if opt.file_out is not None:
-	jetson.utils.saveImageRGBA(opt.file_out, img, width, height)
-
 

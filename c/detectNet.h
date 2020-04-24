@@ -396,6 +396,7 @@ protected:
 			 float threshold, const char* input, const char* coverage, const char* bboxes, uint32_t maxBatchSize, 
 			 precisionType precision, deviceType device, bool allowGPUFallback );
 	
+	int clusterDetectionsRN10( Detection* detections, uint32_t width, uint32_t height );	
 	int clusterDetections( Detection* detections, uint32_t width, uint32_t height );
 	int clusterDetections( Detection* detections, int n, float threshold=0.75f );
 

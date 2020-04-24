@@ -762,6 +762,10 @@ int detectNet::Detect( float* rgba, uint32_t width, uint32_t height, Detection* 
 	
 		numDetections++;
 	}
+	else if( IsModelType(MODEL_RESNET10) )
+	{
+		numDetections = clusterDetectionsRN10(detections, width, height);
+	}
 	else
 	{
 		// cluster detections
@@ -822,6 +826,89 @@ int detectNet::clusterDetections( Detection* detections, int n, float threshold 
 	return 1;	// new detection
 }
 
+// clusterDetections (resnet10)
+int detectNet::clusterDetectionsRN10( Detection* detections, uint32_t width, uint32_t height )
+{
+	float* net_cvg   = mOutputs[OUTPUT_CVG].CPU;
+	float* net_rects = mOutputs[OUTPUT_BBOX].CPU;
+	const int numClassesToParse = 4;
+	const int gridW = DIMS_W(mOutputs[OUTPUT_BBOX].dims);
+	const int gridH = DIMS_H(mOutputs[OUTPUT_BBOX].dims);
+	const int gridSize = gridW * gridH;
+	float gcCentersX[gridW];
+	float gcCentersY[gridH];
+	float bboxNormX = 35.0;
+  	float bboxNormY = 35.0;
+	int strideX = 16;
+	int strideY = 16;
+	int bboxLayerDimsw = 40;
+	int bboxLayerDimsh = 23;
+	int numDetections = 0;
+  	for (int i = 0; i < gridW; i++)
+  	{
+    		gcCentersX[i] = (float)(i * strideX + 0.5);
+    		gcCentersX[i] /= (float)bboxNormX;
+  	}
+  	for (int i = 0; i < gridH; i++)
+  	{
+    		gcCentersY[i] = (float)(i * strideY + 0.5);
+    		gcCentersY[i] /= (float)bboxNormY;
+  	}
+	for (int c = 0; c < numClassesToParse; c++)
+  	{
+    		float *outputX1 = net_rects + (c * 4 * bboxLayerDimsh * bboxLayerDimsw);
+    		float *outputY1 = outputX1 + gridSize;
+    		float *outputX2 = outputY1 + gridSize;
+    		float *outputY2 = outputX2 + gridSize;
+    		for (int h = 0; h < gridH; h++)
+    		{
+      			for (int w = 0; w < gridW; w++)
+      			{
+        			int i = w + h * gridW;
+				const float coverage = net_cvg[c * gridSize + i];
+        			if (coverage >= mCoverageThreshold)
+        			{
+
+          				float x1, y1, x2, y2;
+          				x1 = (outputX1[w + h * gridW] - gcCentersX[w]) * -bboxNormX;
+          				y1 = (outputY1[w + h * gridW] - gcCentersY[h]) * -bboxNormY;
+          				x2 = (outputX2[w + h * gridW] + gcCentersX[w]) * bboxNormX;
+          				y2 = (outputY2[w + h * gridW] + gcCentersY[h]) * bboxNormY;
+#ifdef DEBUG_CLUSTERING
+					printf("rect w=%u h=%u  cvg=%f  %f %f   %f %f \n", w, h, coverage, x1, x2, y1, y2);
+#endif
+					bool detectionMerged = false;
+
+					for( uint32_t n=0; n < numDetections; n++ )
+					{
+						if( detections[n].ClassID == c && detections[n].Expand(x1, y1, x2, y2) )
+						{
+							detectionMerged = true;
+							break;
+						}
+					}
+
+					// create new entry if the detection wasn't merged with another detection
+					if( !detectionMerged )
+					{
+						detections[numDetections].Instance   = numDetections;
+						detections[numDetections].ClassID    = c;
+						detections[numDetections].Confidence = coverage;
+					
+						detections[numDetections].Left   = x1;
+						detections[numDetections].Top    = y1;
+						detections[numDetections].Right  = x2;
+						detections[numDetections].Bottom = y2;
+					
+						numDetections++;
+					}
+				}
+        		}
+      		}
+    	
+  }
+  return numDetections;
+}
 
 // clusterDetections (caffe)
 int detectNet::clusterDetections( Detection* detections, uint32_t width, uint32_t height )

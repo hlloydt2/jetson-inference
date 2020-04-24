@@ -227,6 +227,7 @@ const char* modelTypeToStr( modelType format )
 		case MODEL_CAFFE:	return "caffe";
 		case MODEL_ONNX:	return "ONNX";
 		case MODEL_UFF:	return "UFF";
+		case MODEL_RESNET10: return "resnet10";
 	}
 }
 
@@ -241,7 +242,8 @@ modelType modelTypeFromStr( const char* str )
 		return MODEL_ONNX;
 	else if( strcasecmp(str, "uff") == 0 )
 		return MODEL_UFF;
-
+	else if( strcasecmp(str, "resnet10") == 0 )
+		return MODEL_RESNET10;
 	return MODEL_CUSTOM;
 }
 
@@ -442,9 +444,8 @@ bool tensorNet::ProfileModel(const std::string& deployFile,			   // name for caf
 	//printf(LOG_TRT "platform %s fast FP16 support\n", mEnableFP16 ? "has" : "does not have");
 	printf(LOG_TRT "device %s, loading %s %s\n", deviceTypeToStr(device), deployFile.c_str(), modelFile.c_str());
 	
-
 	// parse the different types of model formats
-	if( mModelType == MODEL_CAFFE )
+	if( mModelType == MODEL_CAFFE || mModelType == MODEL_RESNET10 )
 	{
 		// parse the caffe model to populate the network, then set the outputs
 		nvcaffeparser1::ICaffeParser* parser = nvcaffeparser1::createCaffeParser();
@@ -749,9 +750,15 @@ bool tensorNet::LoadNetwork( const char* prototxt_path_, const char* model_path_
 	const std::string prototxt_path = locateFile(prototxt_path_ != NULL ? prototxt_path_ : "");
 	
 	const std::string model_ext = fileExtension(model_path_);
-	const modelType   model_fmt = modelTypeFromStr(model_ext.c_str());
+	modelType   model_fmt = modelTypeFromStr(model_ext.c_str());
 
 	printf(LOG_TRT "detected model format - %s  (extension '.%s')\n", modelTypeToStr(model_fmt), model_ext.c_str());
+
+	std::string model_path_str(model_path_);
+	if ( model_path_str.find("resnet10") != std::string::npos) {
+		printf(LOG_TRT "Model detected to be our favourite ResNet10!!\n");
+		model_fmt = MODEL_RESNET10;
+	}
 
 	if( model_fmt == MODEL_CUSTOM )
 	{

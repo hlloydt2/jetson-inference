@@ -1,3 +1,28 @@
+# How To Run
+
+```
+# Build the package
+sudo apt-get update
+sudo apt-get install git cmake libpython3-dev python3-numpy
+git clone --recursive https://github.com/dusty-nv/jetson-inference
+cd jetson-inference
+mkdir build
+cd build
+cmake ../
+make -j$(nproc)
+sudo make install
+sudo ldconfig
+# Run model on video
+python ./python/examples/wecorp-detectnet.py /opt/nvidia/deepstream/deepstream-4.0/samples/streams/sample_720p.mp4 --model=/opt/nvidia/deepstream/deepstream-4.0/samples/models/Primary_Detector/resnet10.caffemodel --prototxt=/opt/nvidia/deepstream/deepstream-4.0/samples/models/Primary_Detector/resnet10.prototxt --precision=FP16 --output_cvg=conv2d_cov/Sigmoid --output_bbox=conv2d_bbox --device=DLA --class_labels=/opt/nvidia/deepstream/deepstream-4.0/samples/models/Primary_Detector/labels.txt --threshold=0.999999 --input_blob=input_1
+
+python ./python/examples/wecorp-detectnet.py /opt/nvidia/deepstream/deepstream-4.0/samples/streams/sample_720p.mp4 --network=pednet --precision=FP16 --device=DLA
+```
+
+# TODO
+* Add way to specify DLA0 or DLA1
+* Add resnet10 parser and implement it
+* 
+
 <img src="https://github.com/dusty-nv/jetson-inference/raw/master/docs/images/deep-vision-header.jpg">
 
 # Deploying Deep Learning

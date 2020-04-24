@@ -33,20 +33,13 @@ import cv2
 parser = argparse.ArgumentParser(description="Locate objects in an image using an object detection DNN.", 
 						   formatter_class=argparse.RawTextHelpFormatter, epilog=jetson.inference.detectNet.Usage())
 
-parser.add_argument("file_in", type=str, help="filename of the input image to process")
+parser.add_argument("file_in", type=str, help="filename of the input video to process")
 parser.add_argument("file_out", type=str, default=None, nargs='?', help="filename of the output image to save")
 parser.add_argument("--network", type=str, default="pednet", help="pre-trained model to load (see below for options)")
 parser.add_argument("--overlay", type=str, default="none", help="detection overlay flags (e.g. --overlay=box,labels,conf)\nvalid combinations are:  'box', 'labels', 'conf', 'none'")
 parser.add_argument("--threshold", type=float, default=0.5, help="minimum detection threshold to use")
 parser.add_argument("--device", type=str, default="DLA", help="Device to use. Either GPU or DLA")
 parser.add_argument("--precision", type=str, default="FP16", help="Either INT8, FP16, FP32")
-
-video_path = "/opt/nvidia/deepstream/deepstream-4.0/samples/streams/sample_720p.mp4"
-video = cv2.VideoCapture(video_path)
-
-if not video.isOpened():
-	print("Could not open video")
-	sys.exit()
 
 try:
 	opt = parser.parse_known_args()[0]
@@ -56,9 +49,15 @@ except:
 	parser.print_help()
 	sys.exit(0)
 
+video = cv2.VideoCapture(opt.file_in)
+
+if not video.isOpened():
+	print("Could not open video")
+	sys.exit()
+
 net = jetson.inference.detectNet(opt.network, sys.argv, opt.threshold)
-width = 720
-height = 1280
+width = int(video.get(cv2.CAP_PROP_FRAME_WIDTH))
+height = int(video.get(cv2.CAP_PROP_FRAME_HEIGHT))
 
 while True:
 	ok, frame = video.read()

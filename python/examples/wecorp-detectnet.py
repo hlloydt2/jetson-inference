@@ -60,7 +60,26 @@ class JetInf():
 		self.net = jetson.inference.detectNet(opt.network, sys.argv, opt.threshold)
 		self.opt = opt
 	def detect(self, cuda_mem, width, height):
-		return self.net.Detect(cuda_mem, width, height, self.opt.overlay)
+		detections = self.net.Detect(cuda_mem, width, height, self.opt.overlay)
+		return self.nms(detections)
+	def nms(self, detections, overlapThresh=0.3):
+		if len(detections) == 0: return detections
+		order = np.array([i[0] for i in sorted(enumerate(detections), key=lambda detection: detection[1].Confidence, reverse=True)])
+		keep = []
+		while order.size > 0:
+			i = order[0]
+			keep.append(i)
+			xx1 = np.maximum(detections[i].Left, detections[order[1:]].Left)
+			yy1 = np.maximum(detections[i].Bottom, detections[order[1:]].Bottom)
+			xx2 = np.minimum(detections[i].Right, detections[order[1:]].Right)
+			yy2 = np.minimum(detections[i].Top, detections[order[1:]].Top)
+			w = np.maximum(0.0, xx2 - xx1 + 1)
+			h = np.maximum(0.0, yy2 - yy1 + 1)
+			inter = w * h
+			ovr = inter / (detections[i].Area + detections[order[1:]].Area - inter)
+			inds = np.where(ovr <= overlapThresh)[0]
+			order = order[inds + 1]
+		return detections[keep]
 
 width = int(video.get(cv2.CAP_PROP_FRAME_WIDTH))
 height = int(video.get(cv2.CAP_PROP_FRAME_HEIGHT))

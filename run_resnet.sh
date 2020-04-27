@@ -1,0 +1,2 @@
+./python/examples/wecorp-detectnet.py /opt/nvidia/deepstream/deepstream-4.0/samples/streams/sample_720p.mp4 --model=/opt/nvidia/deepstream/deepstream-4.0/samples/models/Primary_Detector/resnet10.caffemodel --prototxt=/opt/nvidia/deepstream/deepstream-4.0/samples/models/Primary_Detector/resnet10.prototxt --precision=FP16 --output_cvg=conv2d_cov/Sigmoid --output_bbox=conv2d_bbox --device=DLA --class_labels=/opt/nvidia/deepstream/deepstream-4.0/samples/models/Primary_Detector/labels.txt --threshold=3000 --input_blob=input_1
+

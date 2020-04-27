@@ -55,16 +55,24 @@ if not video.isOpened():
 	print("Could not open video")
 	sys.exit()
 
-net = jetson.inference.detectNet(opt.network, sys.argv, opt.threshold)
+class JetInf():
+	def __init__(self, opt):
+		self.net = jetson.inference.detectNet(opt.network, sys.argv, opt.threshold)
+		self.opt = opt
+	def detect(self, cuda_mem, width, height):
+		return self.net.Detect(cuda_mem, width, height, self.opt.overlay)
+
 width = int(video.get(cv2.CAP_PROP_FRAME_WIDTH))
 height = int(video.get(cv2.CAP_PROP_FRAME_HEIGHT))
 
+jetinf = JetInf(opt)
 while True:
 	ok, frame = video.read()
 	if not ok: break
 	frame = cv2.cvtColor(frame, cv2.COLOR_RGB2RGBA)
 	cuda_mem = jetson.utils.cudaFromNumpy(frame)
-	detections = net.Detect(cuda_mem, width, height, opt.overlay)
+
+	detections = jetinf.detect(cuda_mem, width, height)
 	print("detected {:d} objects in image".format(len(detections)))
 	#cv2.imshow("frame", frame)
 	if cv2.waitKey(1) & 0xFF == ord('q'): break

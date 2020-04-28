@@ -61,7 +61,8 @@ class JetInf():
 		self.opt = opt
 	def detect(self, cuda_mem, width, height):
 		detections = self.net.Detect(cuda_mem, width, height, self.opt.overlay)
-		return self.nms(detections)
+		return detections
+		#return self.nms(detections)
 	def nms(self, detections, overlapThresh=0.3):
 		if len(detections) == 0: return detections
 		x1, y1, x2, y2, areas = [], [], [], [], []
